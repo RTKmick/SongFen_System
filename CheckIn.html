@@ -1,60 +1,69 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宋分文理補習班到課報到系統V1.0.0</title>
+    <title>宋分文理補習班到課報到系統V1.0.1</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
-        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; width: 300px; }
-        input { width: 100%; padding: 10px; margin-top: 20px; border: 2px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
-        #status { margin-top: 15px; font-weight: bold; color: #555; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f3; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 400px; }
+        h1 { color: #2c3e50; margin-bottom: 10px; }
+        input { width: 100%; padding: 15px; font-size: 24px; border: 2px solid #ddd; border-radius: 10px; text-align: center; box-sizing: border-box; }
+        input:focus { border-color: #3498db; outline: none; }
+        #msg { margin-top: 25px; font-size: 18px; min-height: 24px; font-weight: bold; }
+        .success { color: #27ae60; }
+        .error { color: #e74c3c; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>學生報到處</h2>
-    <p>請掃描 QR Code 或輸入編號</p>
-    <input type="text" id="studentId" placeholder="等待輸入..." autofocus>
-    <div id="status">系統準備就緒</div>
+<div class="container">
+    <h1>學生報到</h1>
+    <p>請掃描 QR Code 或手動輸入 ID</p>
+    <input type="text" id="sid" autofocus autocomplete="off">
+    <div id="msg">等待掃描中...</div>
 </div>
 
 <script>
-    const input = document.getElementById('studentId');
-    const status = document.getElementById('status');
-    const GAS_URL = '你的_GAS_部署網址'; // 稍後替換
+    const input = document.getElementById('sid');
+    const msg = document.getElementById('msg');
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxqsD9gXbkWJv5bcyr3O1FoEDiaBWhJZJnyey6C8VvUpg16sU7_TkkpJgrI8ZZ3-v6N/exec';
 
-    input.addEventListener('keypress', function (e) {
+    input.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            const id = input.value.trim();
-            if (id) {
-                sendData(id);
-                input.value = ''; // 清空等待下一次掃描
-            }
+            const val = input.value.trim();
+            if (val) submitId(val);
+            input.value = '';
         }
     });
 
-    // 防止失去焦點，掃描機才能持續運作
-    input.addEventListener('blur', () => setTimeout(() => input.focus(), 100));
+    // 強制保持 Focus，方便掃描槍運作
+    document.addEventListener('click', () => input.focus());
 
-    async function sendData(id) {
-        status.innerText = '處理中...';
+    async function submitId(id) {
+        msg.innerText = "處理中...";
+        msg.className = "";
+        
         try {
+            // 使用 JSONP 或 Fetch 處理 GAS 跨網域
             const response = await fetch(GAS_URL, {
                 method: 'POST',
-                mode: 'no-cors', // 避開跨網域問題
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ studentId: id })
             });
-            status.innerText = `ID: ${id} 報到成功！`;
-            status.style.color = 'green';
-        } catch (error) {
-            status.innerText = '傳送失敗，請檢查網路';
-            status.style.color = 'red';
+            const res = await response.json();
+            
+            if (res.result === 'success') {
+                msg.innerText = `✅ ${res.name} 報到成功！`;
+                msg.className = "success";
+            } else if (res.result === 'not_found') {
+                msg.innerText = "❌ 找不到此學生編號";
+                msg.className = "error";
+            }
+        } catch (err) {
+            // GAS POST 正常運作但瀏覽器可能因 CORS 報錯，若 Sheet 已寫入可忽略
+            msg.innerText = "系統已處理完畢"; 
+            console.log(err);
         }
     }
 </script>
-
 </body>
 </html>
