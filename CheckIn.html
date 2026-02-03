@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宋分文理補習班到課報到系統</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; width: 300px; }
+        input { width: 100%; padding: 10px; margin-top: 20px; border: 2px solid #ddd; border-radius: 4px; box-sizing: border-box; font-size: 16px; }
+        #status { margin-top: 15px; font-weight: bold; color: #555; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>學生報到處</h2>
+    <p>請掃描 QR Code 或輸入編號</p>
+    <input type="text" id="studentId" placeholder="等待輸入..." autofocus>
+    <div id="status">系統準備就緒</div>
+</div>
+
+<script>
+    const input = document.getElementById('studentId');
+    const status = document.getElementById('status');
+    const GAS_URL = '你的_GAS_部署網址'; // 稍後替換
+
+    input.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            const id = input.value.trim();
+            if (id) {
+                sendData(id);
+                input.value = ''; // 清空等待下一次掃描
+            }
+        }
+    });
+
+    // 防止失去焦點，掃描機才能持續運作
+    input.addEventListener('blur', () => setTimeout(() => input.focus(), 100));
+
+    async function sendData(id) {
+        status.innerText = '處理中...';
+        try {
+            const response = await fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors', // 避開跨網域問題
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ studentId: id })
+            });
+            status.innerText = `ID: ${id} 報到成功！`;
+            status.style.color = 'green';
+        } catch (error) {
+            status.innerText = '傳送失敗，請檢查網路';
+            status.style.color = 'red';
+        }
+    }
+</script>
+
+</body>
+</html>
